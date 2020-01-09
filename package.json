@@ -1,0 +1,24 @@
+{
+  "name": "todolistproject",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "live-server",
+    "tsc": "tsc -w",
+    "dev": "concurrently \"npm start\" \"npm run tsc\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "concurrently": "^5.0.2",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-import": "^2.19.1"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  }
+}
