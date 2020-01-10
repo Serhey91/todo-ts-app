@@ -9,6 +9,7 @@ function AutoBindContext(target: any, methodName:string|number|Symbol, descripto
 }
 
 enum ProjectStatus {Active, Finished}
+type InsertPositionHTML = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
 // Project
 class Project {
   constructor(public id: string, public title: string, public description: string, public people: number, public status: ProjectStatus) {}
@@ -41,7 +42,6 @@ class ProjectState {
     this.listeners.forEach(listenerFn => listenerFn([...this.projects]));
   }
 }
-
 // state of all application
 const $state:ProjectState = ProjectState.getInstance();
 
@@ -77,91 +77,91 @@ function validate(validatableInput:IValidatable):boolean {
   return isValid;
 }
 
-class ProjectList {
+// component base class
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
   templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLElement;
+  hostElement: T;
+  element: U;
+  constructor(templateId: string, hostElementId: string, insertPlace: InsertPositionHTML, newElementId?: string) {
+    this.templateElement = <HTMLTemplateElement>document.getElementById(templateId);
+    this.hostElement = <T>document.getElementById(hostElementId);
+
+    this.resolveTemplate(newElementId);
+    this.attach(<InsertPosition>insertPlace);
+
+  }
+
+  private resolveTemplate(id: string|void):void {
+    const importedHTML:DocumentFragment = document.importNode(this.templateElement.content, true);
+    this.element = <U>importedHTML.firstElementChild;
+    if (id) this.element.id = id;
+  }
+
+  private attach(plateToInsert: InsertPosition):void {
+    this.hostElement.insertAdjacentElement(plateToInsert, this.element);
+  }
+
+  abstract configure():void;
+  abstract renderContent():void;
+}
+
+class ProjectList extends Component<HTMLDivElement, HTMLElement>{
   assinedProjects: Project[];
 
-  constructor(public listType: 'active'|'finished') {
-    this.templateElement = <HTMLTemplateElement>document.getElementById('project-list');
-    this.hostElement = <HTMLDivElement>document.getElementById('app');
+  constructor(private listType: 'active'|'finished') {
+    super('project-list', 'app', 'beforeend', `${listType}-projects`);
 
     this.assinedProjects = [];
-    this.resolveTemplate();
 
-    $state.addlistener((projects: Project[]) => {
-      const relevantProjects = projects.filter((p:Project) => {
-          if (this.listType === 'active') {
-            return p.status === ProjectStatus.Active;
-          }
-          return p.status === ProjectStatus.Finished;
-        }
-      );
-      this.assinedProjects = relevantProjects;
-      this.renderProjects();
-    });
-
-    this.attach();
+    this.configure();
     this.renderContent();
   }
 
-  private renderProjects() {
-    const list = <HTMLUListElement>document.getElementById(`${this.listType}-projects-list`);
-    list.innerHTML = '';
-    this.assinedProjects.forEach((p: Project) => {
-      const listItem = document.createElement('li');
-      listItem.textContent = p.title;
-      list.append(listItem);
-    })
-  }
-
-  private resolveTemplate():void {
-    const importedHTML:DocumentFragment = document.importNode(this.templateElement.content, true);
-    this.element = <HTMLElement>importedHTML.firstElementChild;
-    this.element.id = `${this.listType}-projects`;
-  }
-
-  private attach():void {
-    this.hostElement.insertAdjacentElement('beforeend', this.element);
-  }
-
-  private renderContent():void {
+  renderContent():void {
     const listId = `${this.listType}-projects-list`;
     this.element.querySelector('ul')!.id = listId;
     this.element.querySelector('h2')!.textContent = `${this.listType.toUpperCase()} PROJECTS`
   }
+
+  configure():void {
+    $state.addlistener((projects: Project[]) => {
+      const relevantProjects: Project[] = projects.filter(({status}:Project) => {
+        return (this.listType === 'active') ? (status === ProjectStatus.Active) : (status === ProjectStatus.Finished);
+      });
+
+      this.assinedProjects = relevantProjects;
+      this.renderProjects();
+    });
+  }
+
+  private renderProjects():void {
+    const list = <HTMLUListElement>document.getElementById(`${this.listType}-projects-list`);
+    list.innerHTML = '';
+    this.assinedProjects.forEach(({title}: Project) => {
+      const listItem = document.createElement('li');
+      listItem.textContent = title;
+      list.append(listItem);
+    })
+  }
 }
 
-class ProjectInput {
-  templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLFormElement;
-
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement>{
   titleInputElement: HTMLInputElement;
   descriptionInputElement: HTMLTextAreaElement;
   peopleInputElement: HTMLInputElement;
   // TODO - try to make dynamic files - in the constructor(getting template and hostElement)
   constructor() {
-    this.templateElement = <HTMLTemplateElement>document.getElementById('project-input');
-    this.hostElement = <HTMLDivElement>document.getElementById('app');
-
-    this.resolveTemplate();
-    this.initializeInputs();
+    super('project-input', 'app', 'afterbegin', 'user-input');
 
     this.configure();
-    this.attach();
   }
 
-  private attach() {
-    this.hostElement.insertAdjacentElement('afterbegin', this.element);
+  configure():void {
+    this.initializeInputs();
+    this.element.addEventListener('submit', this.submitHandler);
   }
 
-  private resolveTemplate():void {
-    const importedHTML:DocumentFragment = document.importNode(this.templateElement.content, true);
-    this.element = <HTMLFormElement>importedHTML.firstElementChild;
-    this.element.id = 'user-input'
-  }
+  renderContent():void {}
 
   private initializeInputs():void {
     this.titleInputElement = <HTMLInputElement>this.element.querySelector('#title');
@@ -180,10 +180,6 @@ class ProjectInput {
       $state.addProject(title, description, people);
       this.clearInput();
     }
-  }
-
-  private configure():void {
-    this.element.addEventListener('submit', this.submitHandler);
   }
 
   private fetchUserInput():[string, string, number]|void {
