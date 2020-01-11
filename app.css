@@ -66,6 +66,7 @@ button:active {
   display: flex;
   justify-content: center;
   align-items: center;
+  color: white;
 }
 
 #finished-projects {
@@ -91,7 +92,6 @@ button:active {
   box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.26);
   padding: 1rem;
   margin: 1rem;
-  color: white;
 }
 
 .projects li h2 {
