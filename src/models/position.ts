@@ -1,3 +1,2 @@
-namespace App {
-  export type InsertPositionHTML = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
-}
+export type InsertPositionHTML = 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
+
