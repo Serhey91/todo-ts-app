@@ -30,9 +30,17 @@ class Project {
         this.status = status;
     }
 }
-class ProjectState {
+class State {
     constructor() {
         this.listeners = [];
+    }
+    addlistener(listenerFn) {
+        this.listeners.push(listenerFn);
+    }
+}
+class ProjectState extends State {
+    constructor() {
+        super();
         this.projects = [];
     }
     static getInstance() {
@@ -40,12 +48,19 @@ class ProjectState {
             this.instance = new ProjectState();
         return this.instance;
     }
-    addlistener(listenerFn) {
-        this.listeners.push(listenerFn);
-    }
     addProject(title, description, people) {
         const newProject = new Project(Math.random().toString(), title, description, people, ProjectStatus.Active);
         this.projects.push(newProject);
+        this.updateListeners();
+    }
+    moveProject(projectId, newStatus) {
+        const project = this.projects.find((p) => p.id === projectId);
+        if (project && project.status !== newStatus) {
+            project.status = newStatus;
+            this.updateListeners();
+        }
+    }
+    updateListeners() {
         this.listeners.forEach(listenerFn => listenerFn([...this.projects]));
     }
 }
@@ -60,13 +75,13 @@ function validate(validatableInput) {
         isValid = isValid && value.length >= minLength;
     }
     if (maxLength !== undefined && typeof value === 'string') {
-        isValid = isValid && value.length < maxLength;
+        isValid = isValid && value.length <= maxLength;
     }
     if (min !== undefined && typeof value === 'number') {
-        isValid = isValid && value > min;
+        isValid = isValid && value >= min;
     }
     if (max !== undefined && typeof value === 'number') {
-        isValid = isValid && value < max;
+        isValid = isValid && value <= max;
     }
     return isValid;
 }
@@ -101,6 +116,9 @@ class ProjectList extends Component {
         this.element.querySelector('h2').textContent = `${this.listType.toUpperCase()} PROJECTS`;
     }
     configure() {
+        this.element.addEventListener('dragover', this.dragOverHandler);
+        this.element.addEventListener('dragleave', this.dragLeaveHandler);
+        this.element.addEventListener('drop', this.dropHandler);
         $state.addlistener((projects) => {
             const relevantProjects = projects.filter(({ status }) => {
                 return (this.listType === 'active') ? (status === ProjectStatus.Active) : (status === ProjectStatus.Finished);
@@ -112,13 +130,84 @@ class ProjectList extends Component {
     renderProjects() {
         const list = document.getElementById(`${this.listType}-projects-list`);
         list.innerHTML = '';
-        this.assinedProjects.forEach(({ title }) => {
-            const listItem = document.createElement('li');
-            listItem.textContent = title;
-            list.append(listItem);
+        this.assinedProjects.forEach((project) => {
+            new ProjectItem(this.element.querySelector('ul').id, project);
         });
     }
+    dragOverHandler(event) {
+        if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') {
+            event.preventDefault();
+            const list = this.element.querySelector('ul');
+            list.classList.add('droppable');
+        }
+    }
+    dropHandler(event) {
+        const projectId = event.dataTransfer.getData('text/plain');
+        $state.moveProject(projectId, this.listType === 'active' ? ProjectStatus.Active : ProjectStatus.Finished);
+    }
+    dragLeaveHandler(event) {
+        const list = this.element.querySelector('ul');
+        list.classList.remove('droppable');
+    }
 }
+__decorate([
+    AutoBindContext,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [DragEvent]),
+    __metadata("design:returntype", void 0)
+], ProjectList.prototype, "dragOverHandler", null);
+__decorate([
+    AutoBindContext,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [DragEvent]),
+    __metadata("design:returntype", void 0)
+], ProjectList.prototype, "dropHandler", null);
+__decorate([
+    AutoBindContext,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [DragEvent]),
+    __metadata("design:returntype", void 0)
+], ProjectList.prototype, "dragLeaveHandler", null);
+class ProjectItem extends Component {
+    constructor(hostId, project) {
+        super('single-project', hostId, 'beforeend', project.id);
+        this.project = project;
+        this.configure();
+        this.renderContent();
+    }
+    get persons() {
+        if (this.project.people === 1)
+            return '1 person';
+        return `${this.project.people} people`;
+    }
+    configure() {
+        this.element.addEventListener('dragstart', this.dragStartHandler);
+        this.element.addEventListener('dragend', this.dragEndHandler);
+    }
+    renderContent() {
+        this.element.querySelector('h2').textContent = this.project.title;
+        this.element.querySelector('h3').textContent = `${this.persons} assigned`;
+        this.element.querySelector('p').textContent = this.project.description;
+    }
+    dragStartHandler(event) {
+        event.dataTransfer.setData('text/plain', this.project.id);
+        event.dataTransfer.effectAllowed = 'move';
+    }
+    dragEndHandler(event) {
+    }
+}
+__decorate([
+    AutoBindContext,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [DragEvent]),
+    __metadata("design:returntype", void 0)
+], ProjectItem.prototype, "dragStartHandler", null);
+__decorate([
+    AutoBindContext,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [DragEvent]),
+    __metadata("design:returntype", void 0)
+], ProjectItem.prototype, "dragEndHandler", null);
 class ProjectInput extends Component {
     constructor() {
         super('project-input', 'app', 'afterbegin', 'user-input');
@@ -150,7 +239,7 @@ class ProjectInput extends Component {
         const enteredDescription = this.descriptionInputElement.value;
         const enteredPeople = +this.peopleInputElement.value;
         const titleValidatable = {
-            value: enteredTitle, required: true, minLength: 5
+            value: enteredTitle, required: true, minLength: 3
         };
         const descriptionValidatable = {
             value: enteredDescription, required: true
@@ -175,7 +264,7 @@ __decorate([
     __metadata("design:paramtypes", [Event]),
     __metadata("design:returntype", void 0)
 ], ProjectInput.prototype, "submitHandler", null);
-const proj = new ProjectInput();
+const projectInputs = new ProjectInput();
 const activeList = new ProjectList('active');
 const finishedList = new ProjectList('finished');
 //# sourceMappingURL=app.js.map
