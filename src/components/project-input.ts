@@ -1,9 +1,8 @@
-import Base from './base.js';
-import {AutoBindContext as Bind} from '../decorators/auto-bind.js';
-// import {validate, IValidatable} from '../utils/validation.js';
-import * as VALIDATION from '../utils/validation.js';
+import Base from './base';
+import {AutoBindContext as Bind} from '../decorators/auto-bind';
+import * as VALIDATION from '../utils/validation';
 
-import {$state} from '../state/state.js';
+import {$state} from '../state/state';
 
 export class ProjectInput extends Base<HTMLDivElement, HTMLFormElement>{
   titleInputElement: HTMLInputElement;

@@ -6,7 +6,10 @@
   "scripts": {
     "start": "live-server",
     "tsc": "tsc -w",
-    "dev": "concurrently \"npm start\" \"npm run tsc\""
+    "dev": "concurrently \"npm start\" \"npm run tsc\"",
+    "dev-web": "webpack",
+    "start-web": "webpack-dev-server",
+    "build": "webpack --config webpack.config.prod.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +22,12 @@
     "eslint-plugin-import": "^2.19.1"
   },
   "devDependencies": {
-    "live-server": "^1.2.1"
+    "clean-webpack-plugin": "^3.0.0",
+    "live-server": "^1.2.1",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.4",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.1"
   }
 }

@@ -1,5 +1,5 @@
   // component base class
-import {InsertPositionHTML} from '../models/position.js';
+import {InsertPositionHTML} from '../models/position';
 
 export default abstract class Component<T extends HTMLElement, U extends HTMLElement> {
   templateElement: HTMLTemplateElement;

@@ -11,6 +11,7 @@ export interface IValidatable {
 export function validate(validatableInput:IValidatable):boolean {
   const {value, required, minLength, maxLength, min, max} = validatableInput;
   let isValid = true;
+
   if (required) {
     isValid = isValid && value.toString().trim().length !== 0;
   }

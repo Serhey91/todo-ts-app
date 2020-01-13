@@ -1,4 +1,4 @@
-import {Project, ProjectStatus} from '../models/project.js';
+import {Project, ProjectStatus} from '../models/project';
 
 export type Listener<T> = (items: T[]) => void;
 
@@ -42,6 +42,7 @@ export class ProjectState extends State<Project>{
     this.listeners.forEach(listenerFn => listenerFn([...this.projects]));
   }
 }
+
 // runs only once for the first time - and if it imports at second time - it would not run again
 // state of all application
 export const $state:ProjectState = ProjectState.getInstance();
